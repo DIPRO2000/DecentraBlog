@@ -1,115 +1,173 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { ethers } from "ethers";
+import MyBlogAbi from "../../../blockchain/build/contracts/MyBlogApp.json";
+import { useWallet } from "../context/WalletContext"; // import your context
 
 const BackArrowIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-5 w-5">
-        <path d="m12 19-7-7 7-7"/>
-        <path d="M19 12H5"/>
-    </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-5 w-5">
+    <path d="m12 19-7-7 7-7"/>
+    <path d="M19 12H5"/>
+  </svg>
 );
 
-const CreatePost = ({ account, setPosts, setView }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [tags, setTags] = useState('');
-  const [error, setError] = useState('');
+const CreatePost = ({ setPosts, setView }) => {
+  const { account, signer } = useWallet(); // get account & signer from context
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [author, setAuthor] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
+  const [tags, setTags] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) {
-      setError('Title and content cannot be empty.');
+
+    if (!signer) {
+      alert("Wallet not connected or signer unavailable!");
+      console.error("No signer available. Connect wallet first.");
       return;
     }
-    
-    const newPost = {
-      id: Date.now(),
-      title,
-      content,
-      author: account,
-      timestamp: Date.now(),
-      imageUrl: imageUrl || `https://placehold.co/1200x600/0f172a/94a3b8?text=${title.replace(/\s/g, '+')}`,
-      tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-    };
 
-    setPosts(prevPosts => [newPost, ...prevPosts]);
-    setView({ name: 'home' });
+    if (!title.trim() || !content.trim()) {
+      setError("Title and content cannot be empty.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Prepare form data for image upload
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append("author", anonymous ? "Anonymous" : (author || account));
+      formData.append("tags", tags);
+      if (imageFile) formData.append("image", imageFile);
+
+      // Upload to backend which will store on IPFS
+      const res = await fetch("http://localhost:3000/api/uploadPostToIPFS", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to upload to IPFS");
+
+      const ipfsHash = data.ipfsHash; // backend should return ipfsHash
+
+      // Contract instance using signer
+      const contract = new ethers.Contract(import.meta.env.VITE_CONTRACT_ADDRESS, MyBlogAbi.abi, signer);
+
+      // Send transaction to blockchain
+      const tx = await contract.createPost(anonymous ? "Anonymous" : (author || account), title, ipfsHash, { gasLimit: 3000000 });
+      await tx.wait();
+
+      // Optionally, add locally
+      const newPost = {
+        id: Date.now(),
+        title,
+        author: anonymous ? "Anonymous" : (author || account),
+        content: { title, content, tags, author: anonymous ? "Anonymous" : (author || account), imageHash: ipfsHash },
+        timestamp: Date.now(),
+        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      };
+      setPosts((prev) => [newPost, ...prev]);
+
+      setView({ name: "home" });
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Error creating post");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-        <button 
-            onClick={() => setView({ name: 'home' })}
-            className="inline-flex items-center text-sm font-medium text-slate-300 hover:text-cyan-400 mb-8 transition-colors"
+    <main className="bg-slate-900 min-h-screen text-slate-200 font-sans">
+      <Header />
+
+      <div className="max-w-3xl mx-auto p-4">
+        <button
+          onClick={() => setView({ name: "home" })}
+          className="inline-flex items-center text-sm font-medium text-slate-300 hover:text-cyan-400 mb-8 transition-colors"
         >
-            <BackArrowIcon />
-            Back to All Posts
+          <BackArrowIcon />
+          Back to All Posts
         </button>
-      <form onSubmit={handleSubmit} className="space-y-8 p-8 bg-slate-800/50 border border-slate-700 rounded-lg">
-        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">Create a New Post</h2>
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-1">
-            Title
-          </label>
+
+        <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-slate-800/50 border border-slate-700 rounded-lg">
+          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">Create a New Post</h2>
+
+          {/* Title */}
           <input
             type="text"
-            id="title"
+            placeholder="Post Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 block w-full bg-slate-800 border border-slate-600 rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-300"
-            placeholder="Your amazing post title"
+            className="w-full p-3 rounded-md bg-slate-800 border border-slate-600 text-white focus:ring-2 focus:ring-cyan-500"
           />
-        </div>
-        <div>
-          <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-300 mb-1">
-            Image URL (Optional)
-          </label>
+
+          {/* Author */}
+          <div>
+            <input
+              type="text"
+              placeholder="Author Name"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              disabled={anonymous}
+              className="w-full p-3 rounded-md bg-slate-800 border border-slate-600 text-white focus:ring-2 focus:ring-cyan-500 disabled:opacity-50"
+            />
+            <label className="flex items-center mt-2 text-sm text-slate-300">
+              <input type="checkbox" checked={anonymous} onChange={() => setAnonymous(!anonymous)} className="mr-2" />
+              Post as Anonymous
+            </label>
+          </div>
+
+          {/* Tags */}
           <input
             type="text"
-            id="imageUrl"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="mt-1 block w-full bg-slate-800 border border-slate-600 rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-300"
-            placeholder="https://example.com/image.png"
-          />
-        </div>
-        <div>
-          <label htmlFor="tags" className="block text-sm font-medium text-slate-300 mb-1">
-            Tags (comma-separated)
-          </label>
-          <input
-            type="text"
-            id="tags"
+            placeholder="Tags (comma-separated)"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            className="mt-1 block w-full bg-slate-800 border border-slate-600 rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-300"
-            placeholder="e.g., Ethereum, DeFi, Tutorial"
+            className="w-full p-3 rounded-md bg-slate-800 border border-slate-600 text-white focus:ring-2 focus:ring-cyan-500"
           />
-        </div>
-        <div>
-          <label htmlFor="content" className="block text-sm font-medium text-slate-300 mb-1">
-            Content
-          </label>
+
+          {/* Image Upload */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files[0])}
+            className="w-full text-white"
+          />
+
+          {/* Content */}
           <textarea
-            id="content"
-            rows="10"
+            placeholder="Write your story..."
+            rows={8}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="mt-1 block w-full bg-slate-800 border border-slate-600 rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-300"
-            placeholder="Write your story here..."
-          ></textarea>
-        </div>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-        <div>
+            className="w-full p-3 rounded-md bg-slate-800 border border-slate-600 text-white focus:ring-2 focus:ring-cyan-500"
+          />
+
+          {error && <p className="text-red-400">{error}</p>}
+
           <button
             type="submit"
-            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 focus:ring-offset-slate-900 transition-all transform hover:scale-105"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-md text-white font-medium hover:from-cyan-600 hover:to-teal-600 transition-all"
           >
-            Publish Post
+            {loading ? "Publishing..." : "Publish Post"}
           </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+
+      <Footer />
+    </main>
   );
 };
 

@@ -16,9 +16,11 @@ app.use(express.json());
 
 //Routes
 import postcreationroute from "./routes/postcreationroute.js";
+import getpostroute from "./routes/getpostroute.js";
 
 
 app.use("/api",postcreationroute);
+app.use("/api",getpostroute);
 
 //Test Route
 app.get("/",(req,res)=>{

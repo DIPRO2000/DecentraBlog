@@ -27,6 +27,12 @@ export async function uploadJSONToIPFS(jsonData) {
     return cid.toString();
 }
 
+export async function uploadPicToIPFS(pic){
+  const { cid }=await client.add(pic);
+  console.log("IPFS Pic CID:", cid.toString());
+  return cid.toString();
+}
+
 // Example:
 // const myJson = { name: "My blog post", content: "This is content" };
 // uploadJSONToIPFS(myJson).then(console.log);

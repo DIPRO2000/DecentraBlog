@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { uploadJSONToIPFS } from "../config/ipfs.js";
+import { uploadJSONToIPFS, uploadPicToIPFS } from "../config/ipfs.js";
 import { provider } from "../config/ethers.js"; 
 import MyBlogAbi from "../../blockchain/build/contracts/MyBlogApp.json" with { type: "json" };
 import dotenv from "dotenv";
@@ -27,8 +27,8 @@ export const uploadPostToIPFS = async (req, res) => {
 
     // If user uploaded a file, push it to IPFS first
     if (req.file) {
-      const { cid: imageCid } = await ipfsClient.add(req.file.buffer);
-      imageHash = imageCid.toString();
+      imageHash = await uploadPicToIPFS(req.file.buffer); // directly get the CID string
+      console.log("Uploaded image CID:", imageHash);
     }
 
     // Build metadata JSON

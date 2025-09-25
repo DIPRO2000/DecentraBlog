@@ -16,6 +16,80 @@
 					},
 					{
 						"indexed": true,
+						"internalType": "bytes32",
+						"name": "commentId",
+						"type": "bytes32"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "commenterAddress",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "commenterName",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "content",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "CommentAdded",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "bytes32",
+						"name": "postId",
+						"type": "bytes32"
+					},
+					{
+						"indexed": true,
+						"internalType": "bytes32",
+						"name": "commentId",
+						"type": "bytes32"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "voter",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "bool",
+						"name": "isUpvote",
+						"type": "bool"
+					}
+				],
+				"name": "CommentVoted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "bytes32",
+						"name": "postId",
+						"type": "bytes32"
+					},
+					{
+						"indexed": true,
 						"internalType": "address",
 						"name": "voter",
 						"type": "address"
@@ -64,6 +138,29 @@
 			{
 				"inputs": [
 					{
+						"internalType": "bytes32",
+						"name": "_postId",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "string",
+						"name": "_commenterName",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "_content",
+						"type": "string"
+					}
+				],
+				"name": "addComment",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "string",
 						"name": "_author",
 						"type": "string"
@@ -90,11 +187,79 @@
 						"internalType": "bytes32",
 						"name": "_postId",
 						"type": "bytes32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_commentIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "downvoteComment",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes32",
+						"name": "_postId",
+						"type": "bytes32"
 					}
 				],
 				"name": "downvotePost",
 				"outputs": [],
 				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getAllPosts",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "bytes32",
+								"name": "id",
+								"type": "bytes32"
+							},
+							{
+								"internalType": "string",
+								"name": "author",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "title",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "contentHash",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "upvote",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "downvote",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "timestamp",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct MyblogApp.Post[]",
+						"name": "",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -161,7 +326,7 @@
 						"type": "bytes32"
 					}
 				],
-				"name": "getPostById",
+				"name": "getComments",
 				"outputs": [
 					{
 						"components": [
@@ -171,18 +336,18 @@
 								"type": "bytes32"
 							},
 							{
+								"internalType": "address",
+								"name": "commenterAddress",
+								"type": "address"
+							},
+							{
 								"internalType": "string",
-								"name": "author",
+								"name": "commenterName",
 								"type": "string"
 							},
 							{
 								"internalType": "string",
-								"name": "title",
-								"type": "string"
-							},
-							{
-								"internalType": "string",
-								"name": "contentHash",
+								"name": "content",
 								"type": "string"
 							},
 							{
@@ -201,12 +366,30 @@
 								"type": "uint256"
 							}
 						],
-						"internalType": "struct MyblogApp.Post",
+						"internalType": "struct MyblogApp.Comment[]",
 						"name": "",
-						"type": "tuple"
+						"type": "tuple[]"
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes32",
+						"name": "_postId",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_commentIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "upvoteComment",
+				"outputs": [],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
@@ -251,11 +434,11 @@
 	},
 	"sources": {
 		"contracts/MyblogApp.sol": {
-			"keccak256": "0xe3f4424c8c0a7e25150f15b6f75bffb852ecabc408d58225211c0c551cf0fa82",
+			"keccak256": "0x27d3daa71754dded7404b5e89adfa3f1bfed49fa3fcf7836877d71dcedecbbe8",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://d5f7db1c7f89a7ca4e170091059016b4caf36c51005edd91423d0fde851a1fef",
-				"dweb:/ipfs/QmZQa6QvY8DJJDzRrR8hPKBLkjsA1HyVXeWcxtggFYv2tc"
+				"bzz-raw://00736af0bb10623176c30c834846ba0a1dc6c64c36beba3993b69ebdedd39ab3",
+				"dweb:/ipfs/QmZyv7k8ZxEsCyuJyorkc1oT1wDoEQLymjZyQgoB5Nm85a"
 			]
 		}
 	},

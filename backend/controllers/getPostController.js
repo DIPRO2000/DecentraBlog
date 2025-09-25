@@ -7,6 +7,7 @@ dotenv.config();
 
 const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, MyBlogAbi.abi, provider);
 
+//Get All Post in blockchain
 export const getAllPosts = async (req, res) => {
   
   try {
@@ -51,7 +52,7 @@ export const getAllPosts = async (req, res) => {
   }
 };
 
-
+//Get all Posts of any User
 export const getPostsbyUsers = async (req, res) => {
   const { user_address } = req.body;
 
@@ -98,5 +99,52 @@ export const getPostsbyUsers = async (req, res) => {
   } catch (error) {
     console.error("Error fetching User's Posts:", error);
     return res.status(500).json({ message: "Error fetching User's Posts" });
+  }
+};
+
+
+// Get any Post by Id
+export const getPostById = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    // call contract method
+    const post = await contract.getPostById(postId);
+
+    let contentData = null;
+    try {
+      // fetch from configured gateway
+      const ipfsGateway = process.env.IPFS_GATEWAY;
+      const resp = await axios.get(`${ipfsGateway}${post[3]}`,{
+        headers: {
+            "User-Agent": "MyApp/1.0",  // or any string
+            "Accept": "application/json"
+        }     
+      });
+      contentData = resp.data; // JSON or string
+    } catch (err) {
+      console.error(`Error fetching IPFS content for ${post[3]}:`, err.message);
+    }
+
+    const formattedPost = {
+      id: post[0],
+      author: post[1],
+      title: post[2],
+      content: contentData,
+      upvote: Number(post[4]), // BigNumber → number
+      downvote: Number(post[5]),
+      timestamp: Number(post[6])
+    };
+
+    return res.status(200).json({
+      success: true,
+      post: formattedPost
+    });
+  } catch (error) {
+    console.error("Error fetching post:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error fetching post"
+    });
   }
 };

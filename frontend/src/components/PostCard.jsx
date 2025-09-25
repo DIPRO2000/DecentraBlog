@@ -1,7 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router";
 
-const PostCard = ({ post, setView }) => {
+const PostCard = ({ post }) => {
   const truncateAddress = (address) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const navigate=useNavigate();
 
   const content = post.content || {};
   const snippet = content.content
@@ -15,7 +17,7 @@ const PostCard = ({ post, setView }) => {
   return (
     <div
       className="group bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden shadow-lg hover:shadow-cyan-500/10 hover:border-cyan-600 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-      onClick={() => setView({ name: "post", data: post })}
+      onClick={() => navigate(`/post/${post.id}`) }
     >
       {imageUrl && (
         <img

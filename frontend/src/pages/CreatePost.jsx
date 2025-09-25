@@ -1,19 +1,31 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { ethers } from "ethers";
 import MyBlogAbi from "../../../blockchain/build/contracts/MyBlogApp.json";
-import { useWallet } from "../context/WalletContext"; // import your context
+import { useWallet } from "../context/WalletContext";
 
 const BackArrowIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-5 w-5">
-    <path d="m12 19-7-7 7-7"/>
-    <path d="M19 12H5"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="mr-2 h-5 w-5"
+  >
+    <path d="m12 19-7-7 7-7" />
+    <path d="M19 12H5" />
   </svg>
 );
 
-const CreatePost = ({ setPosts, setView }) => {
+const CreatePost = ({ setView }) => {
   const { account, signer } = useWallet(); // get account & signer from context
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [author, setAuthor] = useState("");
@@ -22,6 +34,9 @@ const CreatePost = ({ setPosts, setView }) => {
   const [imageFile, setImageFile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [txHash, setTxHash] = useState("");
+
+  const navigate=useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,13 +54,14 @@ const CreatePost = ({ setPosts, setView }) => {
 
     setLoading(true);
     setError("");
+    setTxHash("");
 
     try {
       // Prepare form data for image upload
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
-      formData.append("author", anonymous ? "Anonymous" : (author || account));
+      formData.append("author", anonymous ? "Anonymous" : author || account);
       formData.append("tags", tags);
       if (imageFile) formData.append("image", imageFile);
 
@@ -58,27 +74,34 @@ const CreatePost = ({ setPosts, setView }) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to upload to IPFS");
 
-      const ipfsHash = data.ipfsHash; // backend should return ipfsHash
+      const ipfsHash = data.ipfsHash;
 
       // Contract instance using signer
-      const contract = new ethers.Contract(import.meta.env.VITE_CONTRACT_ADDRESS, MyBlogAbi.abi, signer);
+      const contract = new ethers.Contract(
+        import.meta.env.VITE_CONTRACT_ADDRESS,
+        MyBlogAbi.abi,
+        signer
+      );
 
       // Send transaction to blockchain
-      const tx = await contract.createPost(anonymous ? "Anonymous" : (author || account), title, ipfsHash, { gasLimit: 3000000 });
+      const tx = await contract.createPost(
+        anonymous ? "Anonymous" : author || account,
+        title,
+        ipfsHash,
+        { gasLimit: 3000000 }
+      );
       await tx.wait();
 
-      // Optionally, add locally
-      const newPost = {
-        id: Date.now(),
-        title,
-        author: anonymous ? "Anonymous" : (author || account),
-        content: { title, content, tags, author: anonymous ? "Anonymous" : (author || account), imageHash: ipfsHash },
-        timestamp: Date.now(),
-        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-      };
-      setPosts((prev) => [newPost, ...prev]);
+      // store tx hash for UI
+      setTxHash(tx.hash);
 
-      setView({ name: "home" });
+      // ✅ Clear all fields after success
+      setTitle("");
+      setContent("");
+      setAuthor("");
+      setAnonymous(false);
+      setTags("");
+      setImageFile(null);
     } catch (err) {
       console.error(err);
       setError(err.message || "Error creating post");
@@ -93,15 +116,20 @@ const CreatePost = ({ setPosts, setView }) => {
 
       <div className="max-w-3xl mx-auto p-4">
         <button
-          onClick={() => setView({ name: "home" })}
-          className="inline-flex items-center text-sm font-medium text-slate-300 hover:text-cyan-400 mb-8 transition-colors"
+          onClick={() => navigate("/")}
+          className="inline-flex items-center text-sm font-medium text-slate-300 hover:text-cyan-400 mb-8 transition-colors cursor-pointer"
         >
           <BackArrowIcon />
           Back to All Posts
         </button>
 
-        <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-slate-800/50 border border-slate-700 rounded-lg">
-          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">Create a New Post</h2>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 p-6 bg-slate-800/50 border border-slate-700 rounded-lg"
+        >
+          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">
+            Create a New Post
+          </h2>
 
           {/* Title */}
           <input
@@ -123,7 +151,12 @@ const CreatePost = ({ setPosts, setView }) => {
               className="w-full p-3 rounded-md bg-slate-800 border border-slate-600 text-white focus:ring-2 focus:ring-cyan-500 disabled:opacity-50"
             />
             <label className="flex items-center mt-2 text-sm text-slate-300">
-              <input type="checkbox" checked={anonymous} onChange={() => setAnonymous(!anonymous)} className="mr-2" />
+              <input
+                type="checkbox"
+                checked={anonymous}
+                onChange={() => setAnonymous(!anonymous)}
+                className="mr-2"
+              />
               Post as Anonymous
             </label>
           </div>
@@ -138,12 +171,27 @@ const CreatePost = ({ setPosts, setView }) => {
           />
 
           {/* Image Upload */}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files[0])}
-            className="w-full text-white"
-          />
+          <div className="w-full">
+            <label
+              htmlFor="image-upload"
+              className="block w-full p-4 text-center rounded-md border border-dashed border-slate-500 bg-slate-800 text-slate-300 cursor-pointer hover:border-cyan-400 hover:text-cyan-400 transition-colors"
+            >
+              {imageFile ? (
+                <span className="font-medium">Selected: {imageFile.name}</span>
+              ) : (
+                <span className="font-medium">
+                  Click to upload an image (optional)
+                </span>
+              )}
+            </label>
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files[0])}
+              className="hidden"
+            />
+          </div>
 
           {/* Content */}
           <textarea
@@ -159,10 +207,27 @@ const CreatePost = ({ setPosts, setView }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-md text-white font-medium hover:from-cyan-600 hover:to-teal-600 transition-all"
+            className="w-full py-3 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-md text-white font-medium hover:from-cyan-600 hover:to-teal-600 transition-all cursor-pointer"
           >
             {loading ? "Publishing..." : "Publish Post"}
           </button>
+
+          {txHash && (
+            <div className="mt-4 p-3 rounded-md bg-green-800/30 border border-green-500 text-green-300 break-all">
+              ✅ Transaction successful! <br />
+              <span className="font-mono">
+                Tx Hash:{" "}{txHash}
+                {/* <a
+                  href={`https://sepolia.etherscan.io/tx/${txHash}`} // change to your explorer
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-green-400"
+                >
+                  {txHash}
+                </a> */}
+              </span>
+            </div>
+          )}
         </form>
       </div>
 

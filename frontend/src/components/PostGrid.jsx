@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import PostCard from "./PostCard";
 
-const PostGrid = ({ posts: initialPosts = [], onLoadMore, hasMore }) => {
+const PostGrid = ({ onLoadMore, hasMore }) => {
   const [posts, setPosts] = useState([]);
 
   // Example: fetch posts if needed
@@ -27,7 +27,7 @@ const PostGrid = ({ posts: initialPosts = [], onLoadMore, hasMore }) => {
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-10 mx-5">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <PostCard post={post} />
         ))}
       </div>
       {hasMore && (

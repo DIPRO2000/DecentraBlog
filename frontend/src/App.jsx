@@ -5,7 +5,7 @@ import "./App.css";
 
 import Home from "./pages/Home";
 import CreatePost from "./pages/CreatePost";
-import Header from "./components/Header";
+import FullPost from "./pages/FullPost";
 
 function App() {
   const [posts, setPosts] = useState([]);
@@ -54,6 +54,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home posts={posts} />} />
         <Route path="/createpost" element={<CreatePost/>} />
+        <Route path="/post/:postId" element={<FullPost/>} />
       </Routes>
     </BrowserRouter>
   );

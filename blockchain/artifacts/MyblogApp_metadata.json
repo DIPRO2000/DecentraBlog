@@ -380,6 +380,55 @@
 						"internalType": "bytes32",
 						"name": "_postId",
 						"type": "bytes32"
+					}
+				],
+				"name": "getPostById",
+				"outputs": [
+					{
+						"internalType": "bytes32",
+						"name": "id",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "string",
+						"name": "author",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "title",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "contentHash",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "upvote",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "downvote",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes32",
+						"name": "_postId",
+						"type": "bytes32"
 					},
 					{
 						"internalType": "uint256",
@@ -434,11 +483,11 @@
 	},
 	"sources": {
 		"contracts/MyblogApp.sol": {
-			"keccak256": "0x27d3daa71754dded7404b5e89adfa3f1bfed49fa3fcf7836877d71dcedecbbe8",
+			"keccak256": "0x4a8342646728aae5245f6beb3be70660a0ccd86db27ea39924f6238184f460e8",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://00736af0bb10623176c30c834846ba0a1dc6c64c36beba3993b69ebdedd39ab3",
-				"dweb:/ipfs/QmZyv7k8ZxEsCyuJyorkc1oT1wDoEQLymjZyQgoB5Nm85a"
+				"bzz-raw://59c5ab8d60f8f89d3d043ac2a6e8d55f8e794b4a60f34503264d0db9632e94c9",
+				"dweb:/ipfs/QmT6BoHVhC5utmE1nKpBHj8RjgVKqHb1QxZEMToVdZ8cnS"
 			]
 		}
 	},

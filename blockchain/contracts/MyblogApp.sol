@@ -137,6 +137,21 @@ contract MyblogApp {
         return allPosts;
     }
 
+    // NEW: Fetch a single post by ID
+    function getPostById(bytes32 _postId) public view returns (
+        bytes32 id,
+        string memory author,
+        string memory title,
+        string memory contentHash,
+        uint256 upvote,
+        uint256 downvote,
+        uint256 timestamp
+    ) {
+        require(posts[_postId].id != bytes32(0), "Post does not exist.");
+        Post memory p = posts[_postId];
+        return (p.id, p.author, p.title, p.contentHash, p.upvote, p.downvote, p.timestamp);
+    }
+
     // Fetch comments of a post
     function getComments(bytes32 _postId) public view returns(Comment[] memory) {
         return postComments[_postId];

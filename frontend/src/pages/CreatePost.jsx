@@ -23,7 +23,7 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-const CreatePost = ({ setView }) => {
+const CreatePost = () => {
   const { account, signer } = useWallet(); // get account & signer from context
 
   const [title, setTitle] = useState("");
@@ -66,7 +66,7 @@ const CreatePost = ({ setView }) => {
       if (imageFile) formData.append("image", imageFile);
 
       // Upload to backend which will store on IPFS
-      const res = await fetch("http://localhost:3000/api/uploadPostToIPFS", {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/uploadPostToIPFS`, {
         method: "POST",
         body: formData,
       });
